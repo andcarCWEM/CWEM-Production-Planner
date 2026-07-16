@@ -1,0 +1,127 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+
+type Category = "external" | "press" | "internal" | "setup" | "urgent" | "unavailable";
+type Operator = { id: string; name: string; detail: string };
+type Job = {
+  id: string; title: string; description: string; operatorId: string | null;
+  day: number; start: number; duration: number; lane: number; category: Category;
+  color: string; machine: string; due: string; quantity: string; week: string;
+};
+
+const START = 7 * 60;
+const DAY_LENGTHS = [525, 525, 525, 525, 360]; // Mon–Thu 07:00–15:45, Fri 07:00–13:00
+const TOTAL_MINUTES = DAY_LENGTHS.reduce((a, b) => a + b, 0);
+const OPERATOR_HEIGHT = 96;
+const LANE_HEIGHT = 32;
+const palette: Record<Category, string> = {
+  external: "#1677b9", press: "#398c57", internal: "#d27b2c",
+  setup: "#7954a2", urgent: "#c94b4b", unavailable: "#7c8992",
+};
+const categories: { id: Category; label: string }[] = [
+  { id: "external", label: "External Client" }, { id: "press", label: "Press Build" },
+  { id: "internal", label: "Internal Support" }, { id: "setup", label: "Machine Setup" },
+  { id: "urgent", label: "Urgent / Overdue" }, { id: "unavailable", label: "Unavailable" },
+];
+const mondayOf = (date: Date) => { const d=new Date(date),day=d.getDay(); d.setDate(d.getDate()-(day===0?6:day-1)); d.setHours(0,0,0,0); return d; };
+const addDays = (date: Date, n: number) => { const d=new Date(date); d.setDate(d.getDate()+n); return d; };
+const dateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const CURRENT_WEEK = dateKey(mondayOf(new Date()));
+const initialOperators: Operator[] = Array.from({ length: 8 }, (_, i) => ({
+  id: `op-${i + 1}`, name: `Operator ${String.fromCharCode(65 + i)}`, detail: i < 5 ? "CNC Production" : "Production",
+}));
+const initialJobs: Job[] = [];
+
+const prettyDate = (d: Date) => d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+const timeLabel = (mins: number) => `${String(Math.floor(mins/60)).padStart(2,"0")}:${String(mins%60).padStart(2,"0")}`;
+const dayOffset = (day: number) => DAY_LENGTHS.slice(0,day).reduce((a,b)=>a+b,0);
+const absoluteToDay = (absolute: number) => { let left=absolute; for(let day=0;day<5;day++){ if(left<DAY_LENGTHS[day]) return {day,start:left}; left-=DAY_LENGTHS[day]; } return {day:4,start:DAY_LENGTHS[4]-15}; };
+const parseTime = (value: string) => { const match=value.trim().match(/^(\d{1,2})[:.]?(\d{2})$/); if(!match)return null; const h=Number(match[1]),m=Number(match[2]); return h<24&&m<60?h*60+m:null; };
+const EPOCH_MONDAY = Math.floor(Date.UTC(2020,0,6)/86400000);
+const dateOrdinal = (key:string) => { const [y,m,d]=key.split("-").map(Number); return Math.floor(Date.UTC(y,m-1,d)/86400000); };
+const keyFromOrdinal = (ordinal:number) => new Date(ordinal*86400000).toISOString().slice(0,10);
+const normalizeWeekKey = (key:string) => { const ordinal=dateOrdinal(key),weekday=new Date(ordinal*86400000).getUTCDay(); return keyFromOrdinal(ordinal-(weekday===0?6:weekday-1)); };
+const weekGlobalStart = (week:string) => Math.round((dateOrdinal(normalizeWeekKey(week))-EPOCH_MONDAY)/7)*TOTAL_MINUTES;
+const jobGlobalStart = (job:Job) => weekGlobalStart(job.week)+dayOffset(job.day)+job.start;
+const positionFromGlobal = (global:number) => { let weekIndex=Math.floor(global/TOTAL_MINUTES),within=global-weekIndex*TOTAL_MINUTES; if(within<0){weekIndex--;within+=TOTAL_MINUTES;} const placed=absoluteToDay(Math.min(within,TOTAL_MINUTES-15)); return {week:keyFromOrdinal(EPOCH_MONDAY+weekIndex*7),day:placed.day,start:placed.start}; };
+const dateTimeFromGlobal = (global:number,preferEnd=false) => { let weekIndex=Math.floor(global/TOTAL_MINUTES),within=global-weekIndex*TOTAL_MINUTES; if(within<0){weekIndex--;within+=TOTAL_MINUTES;} if(preferEnd&&within===0){weekIndex--;within=TOTAL_MINUTES;} let day=0,minute=within; for(;day<5;day++){if(minute<DAY_LENGTHS[day]||(!preferEnd&&minute===0))break;if(preferEnd&&minute===DAY_LENGTHS[day])break;minute-=DAY_LENGTHS[day];} day=Math.min(day,4); return {date:keyFromOrdinal(EPOCH_MONDAY+weekIndex*7+day),time:timeLabel(START+minute)}; };
+const globalFromDateTime = (date:string,time:string,isEnd=false) => { if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return null; const ordinal=dateOrdinal(date),weekday=new Date(ordinal*86400000).getUTCDay(),day=weekday-1,clock=parseTime(time); if(day<0||day>4||clock===null)return null; const offset=clock-START,length=DAY_LENGTHS[day]; if(offset<0||offset>length||(!isEnd&&offset===length))return null; const mondayOrdinal=ordinal-day,weekIndex=Math.round((mondayOrdinal-EPOCH_MONDAY)/7); return weekIndex*TOTAL_MINUTES+dayOffset(day)+offset; };
+const blankJob = (week=CURRENT_WEEK): Job => ({ id:"",title:"",description:"",operatorId:null,day:0,start:0,duration:60,lane:0,category:"external",color:palette.external,machine:"",due:"",quantity:"",week });
+const normalizeJob = (j: Partial<Job>): Job => ({ ...blankJob(), ...j, week:normalizeWeekKey(j.week||CURRENT_WEEK), lane:Math.max(0,Math.min(2,j.lane??0)), color:j.color||palette[j.category||"external"] } as Job);
+
+export default function ProductionPlanner(){
+  const [operators,setOperators]=useState(initialOperators);
+  const [jobs,setJobs]=useState(initialJobs);
+  const [weekStart,setWeekStart]=useState(()=>mondayOf(new Date()));
+  const [selectedId,setSelectedId]=useState<string|null>(null);
+  const [editor,setEditor]=useState<Job|null>(null);
+  const [startText,setStartText]=useState("07:00");
+  const [startDateText,setStartDateText]=useState(CURRENT_WEEK);
+  const [endText,setEndText]=useState("08:00");
+  const [endDateText,setEndDateText]=useState(CURRENT_WEEK);
+  const [showBacklog,setShowBacklog]=useState(true);
+  const [notice,setNotice]=useState("");
+  const boardRef=useRef<HTMLDivElement>(null),fileRef=useRef<HTMLInputElement>(null),hydrated=useRef(false);
+
+  useEffect(()=>{ try{ const saved=localStorage.getItem("cwem-production-planner-v1"); if(saved){ const data=JSON.parse(saved); if(Array.isArray(data.jobs))setJobs(data.jobs.map(normalizeJob)); if(Array.isArray(data.operators))setOperators(data.operators); } }catch{} hydrated.current=true; },[]);
+  useEffect(()=>{ if(hydrated.current)localStorage.setItem("cwem-production-planner-v1",JSON.stringify({jobs,operators})); },[jobs,operators]);
+
+  const currentWeekKey=dateKey(weekStart),currentWeekGlobal=weekGlobalStart(currentWeekKey);
+  const segmentFor=(job:Job)=>{const start=jobGlobalStart(job),end=start+job.duration,segmentStart=Math.max(start,currentWeekGlobal),segmentEnd=Math.min(end,currentWeekGlobal+TOTAL_MINUTES);return segmentEnd>segmentStart?{start:segmentStart-currentWeekGlobal,duration:segmentEnd-segmentStart,startsBefore:start<currentWeekGlobal,endsAfter:end>currentWeekGlobal+TOTAL_MINUTES}:null;};
+  const scheduled=jobs.filter(j=>j.operatorId&&segmentFor(j)),backlog=jobs.filter(j=>!j.operatorId);
+  const weekLabel=`${prettyDate(weekStart)} – ${prettyDate(addDays(weekStart,4))} ${addDays(weekStart,4).getFullYear()}`;
+  const metrics=useMemo(()=>{ const planned=scheduled.reduce((n,j)=>n+(segmentFor(j)?.duration||0),0)/60,capacity=operators.length*(DAY_LENGTHS.reduce((a,b)=>a+b,0)/60); return {planned,utilisation:capacity?Math.round(planned/capacity*100):0,urgent:scheduled.filter(j=>j.category==="urgent").length}; },[scheduled,operators,jobs,currentWeekGlobal]);
+  const flash=(message:string)=>{setNotice(message);window.setTimeout(()=>setNotice(""),1800);};
+  const openEditor=(job:Job)=>{const start=jobGlobalStart(job),end=start+job.duration,startDT=dateTimeFromGlobal(start),endDT=dateTimeFromGlobal(end,true);setEditor({...job,week:job.week||currentWeekKey});setStartDateText(startDT.date);setStartText(startDT.time);setEndDateText(endDT.date);setEndText(endDT.time);};
+  const saveEditor=()=>{if(!editor||!editor.title.trim())return;const startGlobal=globalFromDateTime(startDateText,startText),endGlobal=globalFromDateTime(endDateText,endText,true);if(startGlobal===null){flash("Choose a weekday and a start time within working hours");return;}if(endGlobal===null){flash("Choose a weekday and an end time within working hours");return;}if(endGlobal<=startGlobal){flash("End date and time must be after the start");return;}const placed=positionFromGlobal(startGlobal),next={...editor,id:editor.id||`job-${Date.now()}`,week:placed.week,day:placed.day,start:placed.start,duration:endGlobal-startGlobal,lane:Math.max(0,Math.min(2,editor.lane)),color:editor.color||palette[editor.category]};setJobs(old=>editor.id?old.map(j=>j.id===editor.id?next:j):[...old,next]);setEditor(null);flash(editor.id?"Job updated":"Job added");};
+  const removeJob=(id:string)=>{if(!window.confirm("Delete this job?"))return;setJobs(old=>old.filter(j=>j.id!==id));setEditor(null);setSelectedId(null);flash("Job deleted");};
+  const addOperator=()=>{const name=window.prompt("New operator name");if(!name?.trim())return;setOperators(old=>[...old,{id:`op-${Date.now()}`,name:name.trim(),detail:"Production"}]);flash("Operator added");};
+  const editOperator=(op:Operator)=>{const name=window.prompt("Operator name",op.name);if(name?.trim())setOperators(old=>old.map(o=>o.id===op.id?{...o,name:name.trim()}:o));};
+  const removeOperator=(op:Operator)=>{if(!window.confirm(`Remove ${op.name}? Their scheduled jobs will return to Unscheduled.`))return;setJobs(old=>old.map(j=>j.operatorId===op.id?{...j,operatorId:null}:j));setOperators(old=>old.filter(o=>o.id!==op.id));flash("Operator removed");};
+
+  const beginPointer=(e:React.PointerEvent,job:Job,mode:"move"|"left"|"right")=>{
+    e.preventDefault();e.stopPropagation();setSelectedId(job.id);const board=boardRef.current;if(!board)return;
+    const startX=e.clientX,startY=e.clientY,original={...job},width=board.getBoundingClientRect().width;
+    const onMove=(ev:PointerEvent)=>{const delta=Math.round(((ev.clientX-startX)/width*TOTAL_MINUTES)/15)*15;setJobs(old=>old.map(j=>{if(j.id!==job.id)return j;
+      const originalGlobal=jobGlobalStart(original);
+      if(mode==="right")return{...j,duration:Math.max(15,original.duration+delta)};
+      if(mode==="left"){const shift=Math.min(original.duration-15,delta),placed=positionFromGlobal(originalGlobal+shift);return{...j,week:placed.week,day:placed.day,start:placed.start,duration:original.duration-shift};}
+      const placed=positionFromGlobal(originalGlobal+delta);
+      const oldOp=operators.findIndex(o=>o.id===original.operatorId),oldTrack=oldOp*3+(original.lane||0),track=Math.max(0,Math.min(operators.length*3-1,oldTrack+Math.round((ev.clientY-startY)/LANE_HEIGHT)));
+      return{...j,week:placed.week,day:placed.day,start:placed.start,duration:original.duration,operatorId:operators[Math.floor(track/3)]?.id||j.operatorId,lane:track%3}; }));};
+    const onUp=()=>{window.removeEventListener("pointermove",onMove);window.removeEventListener("pointerup",onUp);flash("Schedule updated");};window.addEventListener("pointermove",onMove);window.addEventListener("pointerup",onUp);
+  };
+
+  const exportData=()=>{const blob=new Blob([JSON.stringify({version:2,exported:new Date().toISOString(),operators,jobs},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`CWEM-production-plan-${dateKey(weekStart)}.json`;a.click();URL.revokeObjectURL(a.href);flash("Backup downloaded");};
+  const importData=async(e:React.ChangeEvent<HTMLInputElement>)=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data.jobs)||!Array.isArray(data.operators))throw new Error();setJobs(data.jobs.map(normalizeJob));setOperators(data.operators);flash("Plan restored");}catch{flash("That backup could not be read");}e.target.value="";};
+  const scheduleBacklog=(job:Job,operatorId:string)=>setJobs(old=>old.map(j=>j.id===job.id?{...j,operatorId,lane:0}:j));
+  const editorStartGlobal=globalFromDateTime(startDateText,startText),editorEndGlobal=globalFromDateTime(endDateText,endText,true);
+  const editorHours=editorStartGlobal!==null&&editorEndGlobal!==null&&editorEndGlobal>editorStartGlobal?(editorEndGlobal-editorStartGlobal)/60:null;
+
+  return <main className="app-shell">
+    <header className="topbar"><div className="brand-mark">C</div><div className="brand-copy"><span>CWEM OPERATIONS</span><h1>Production Planner</h1></div><div className="header-actions"><button className="button ghost" onClick={()=>window.print()}>▣ Print / PDF</button><button className="button ghost" onClick={exportData}>↓ Backup</button><button className="button ghost" onClick={()=>fileRef.current?.click()}>↑ Restore</button><input ref={fileRef} type="file" accept="application/json" hidden onChange={importData}/><button className="button ghost" onClick={addOperator}>＋ Operator</button><button className="button primary" onClick={()=>openEditor(blankJob(currentWeekKey))}>＋ Add job</button></div></header>
+    <section className="summary-strip"><div><span>Week commencing</span><strong>{prettyDate(weekStart)}</strong></div><div><span>Planned hours</span><strong>{metrics.planned.toFixed(1)} h</strong></div><div><span>Indicative loading</span><strong>{metrics.utilisation}%</strong></div><div><span>Unscheduled</span><strong>{backlog.length}</strong></div><div className={metrics.urgent?"urgent-metric":""}><span>Urgent jobs</span><strong>{metrics.urgent}</strong></div></section>
+    <section className="planner-card"><div className="planner-toolbar"><div className="week-nav"><button aria-label="Previous week" onClick={()=>setWeekStart(addDays(weekStart,-7))}>‹</button><button className="today" onClick={()=>setWeekStart(mondayOf(new Date()))}>Today</button><button aria-label="Next week" onClick={()=>setWeekStart(addDays(weekStart,7))}>›</button><h2>{weekLabel}</h2></div><div className="four-week-nav" aria-label="Four week planning horizon">{Array.from({length:4},(_,i)=>{const d=addDays(mondayOf(new Date()),i*7);return <button className={dateKey(d)===currentWeekKey?"active":""} key={i} onClick={()=>setWeekStart(d)}>W{i+1}<span>{prettyDate(d)}</span></button>;})}</div><div className="toolbar-right"><span className="autosave"><i/> Saved on this device</span><button className={`backlog-toggle ${showBacklog?"active":""}`} onClick={()=>setShowBacklog(!showBacklog)}>Unscheduled ({backlog.length})</button></div></div>
+      <div className={`planner-body ${showBacklog?"with-backlog":""}`}><div className="schedule-wrap">
+        <div className="resource-head"><div><strong>OPERATORS</strong><span>Three concurrent job lanes</span></div><button onClick={addOperator} aria-label="Add operator">＋</button></div>
+        <div className="timeline-head" style={{gridTemplateColumns:DAY_LENGTHS.map(n=>`${n}fr`).join(" ")}}>{DAY_LENGTHS.map((length,day)=><div className="day-head" key={day}><strong>{addDays(weekStart,day).toLocaleDateString("en-GB",{weekday:"short"})}</strong><span>{prettyDate(addDays(weekStart,day))}</span><small>07:00–{timeLabel(START+length)}</small><div className="hours"><i>07:00</i><i>{timeLabel(START+Math.round(length/2))}</i><i>{timeLabel(START+length)}</i></div></div>)}</div>
+        <div className="resource-list">{operators.map(op=><div key={op.id} className="resource-row"><span className="avatar">{op.name.replace("Operator ","").slice(0,2)}</span><button className="operator-name" onClick={()=>editOperator(op)}><strong>{op.name}</strong><small>{op.detail}</small></button><em>{(scheduled.filter(j=>j.operatorId===op.id).reduce((n,j)=>n+(segmentFor(j)?.duration||0),0)/60).toFixed(1)}h</em><button className="remove-operator" onClick={()=>removeOperator(op)} aria-label={`Remove ${op.name}`}>×</button></div>)}</div>
+        <div className="timeline-grid" ref={boardRef} style={{height:operators.length*OPERATOR_HEIGHT}} onClick={()=>setSelectedId(null)}>{operators.map(op=><div className="grid-row" key={op.id}><i/><i/><i/></div>)}{DAY_LENGTHS.map((_,i)=><i className="grid-line major" style={{left:`${dayOffset(i)/TOTAL_MINUTES*100}%`}} key={i}/>)}
+          {scheduled.map(job=>{const row=operators.findIndex(o=>o.id===job.operatorId),segment=segmentFor(job);if(row<0||!segment)return null;return <article key={job.id} className={`job-bar ${segment.startsBefore?"continues-left":""} ${segment.endsAfter?"continues-right":""} ${selectedId===job.id?"selected":""}`} style={{left:`${segment.start/TOTAL_MINUTES*100}%`,width:`${segment.duration/TOTAL_MINUTES*100}%`,top:row*OPERATOR_HEIGHT+(job.lane||0)*LANE_HEIGHT+4,backgroundColor:job.color||palette[job.category]}} onPointerDown={e=>beginPointer(e,job,"move")} onDoubleClick={e=>{e.stopPropagation();openEditor(job);}} title={`${job.title}\n${job.description}\n${job.machine}\nLane ${(job.lane||0)+1} · Total working time ${job.duration/60}h`}>{!segment.startsBefore&&<button className="resize left" aria-label="Resize job start" onPointerDown={e=>beginPointer(e,job,"left")}/>}<div className="job-content"><strong>{segment.startsBefore?"← ":""}{job.title}{segment.endsAfter?" →":""}</strong><span>{job.machine||job.description||`${job.duration/60}h`}</span></div><button className="job-delete" aria-label="Delete job" onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();removeJob(job.id);}}>×</button>{!segment.endsAfter&&<button className="resize right" aria-label="Resize job end" onPointerDown={e=>beginPointer(e,job,"right")}/>}</article>;})}
+        </div>
+      </div>{showBacklog&&<aside className="backlog-panel"><div className="backlog-head"><div><span>UNSCHEDULED</span><strong>{backlog.length} jobs awaiting allocation</strong></div><button onClick={()=>setShowBacklog(false)}>×</button></div><div className="backlog-list">{backlog.length===0&&<div className="empty-state">Everything is scheduled.</div>}{backlog.map(job=><article className="backlog-job" style={{backgroundColor:job.color||palette[job.category]}} key={job.id} onDoubleClick={()=>openEditor(job)}><button className="backlog-delete" onClick={()=>removeJob(job.id)} aria-label="Delete job">×</button><div><strong>{job.title}</strong><span>{job.description||"No operation description"}</span></div><dl><div><dt>Machine</dt><dd>{job.machine||"TBC"}</dd></div><div><dt>Duration</dt><dd>{(job.duration/60).toFixed(1)} h</dd></div></dl><label>Allocate to<select value="" onChange={e=>scheduleBacklog(job,e.target.value)}><option value="">Choose operator…</option>{operators.map(o=><option value={o.id} key={o.id}>{o.name}</option>)}</select></label></article>)}</div><button className="add-backlog" onClick={()=>openEditor(blankJob(currentWeekKey))}>＋ Add unscheduled job</button></aside>}</div>
+    </section>
+    <section className="legend"><strong>COLOUR PRESETS</strong>{categories.map(c=><span key={c.id}><i className="dot" style={{backgroundColor:palette[c.id]}}/>{c.label}</span>)}<em>Every job colour can be manually changed</em></section>
+    {editor&&<div className="modal-backdrop" onMouseDown={()=>setEditor(null)}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="job-editor" onMouseDown={e=>e.stopPropagation()}><header><div><span>{editor.id?"EDIT SCHEDULED WORK":"NEW PRODUCTION JOB"}</span><h2 id="job-editor">{editor.id?editor.title:"Add a job"}</h2></div><button onClick={()=>setEditor(null)}>×</button></header><div className="form-grid">
+      <label className="wide">Works order / job title<input autoFocus value={editor.title} onChange={e=>setEditor({...editor,title:e.target.value})} placeholder="WO-00000 · Part description"/></label><label className="wide">Operation description<textarea value={editor.description} onChange={e=>setEditor({...editor,description:e.target.value})} placeholder="Describe the production operation"/></label>
+      <label>Operator<select value={editor.operatorId||""} onChange={e=>setEditor({...editor,operatorId:e.target.value||null})}><option value="">Unscheduled</option>{operators.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label><label>Working lane<select value={editor.lane} onChange={e=>setEditor({...editor,lane:Number(e.target.value)})}><option value={0}>Lane 1</option><option value={1}>Lane 2</option><option value={2}>Lane 3</option></select></label>
+      <label>Machine<input value={editor.machine} onChange={e=>setEditor({...editor,machine:e.target.value})} placeholder="e.g. Mazak QT200"/></label><label>Calculated working time<input value={editorHours===null?"Check dates and times":`${editorHours.toFixed(2)} hours`} readOnly/><small className="field-help">Nights and weekends are excluded</small></label>
+      <fieldset className="date-range wide"><legend>Job start</legend><label>Start date<input type="date" value={startDateText} onChange={e=>setStartDateText(e.target.value)}/></label><label>Start time (HH:MM)<input type="text" inputMode="numeric" value={startText} onChange={e=>setStartText(e.target.value)} placeholder="07:00"/></label></fieldset>
+      <fieldset className="date-range wide"><legend>Job end</legend><label>End date<input type="date" value={endDateText} onChange={e=>setEndDateText(e.target.value)}/></label><label>End time (HH:MM)<input type="text" inputMode="numeric" value={endText} onChange={e=>setEndText(e.target.value)} placeholder="15:45"/></label></fieldset>
+      <label>Quantity<input value={editor.quantity} onChange={e=>setEditor({...editor,quantity:e.target.value})}/></label><label>Due date<input type="date" value={editor.due} onChange={e=>setEditor({...editor,due:e.target.value})}/></label>
+      <label>Colour preset<select value={editor.category} onChange={e=>{const category=e.target.value as Category;setEditor({...editor,category,color:palette[category]});}}>{categories.map(c=><option value={c.id} key={c.id}>{c.label}</option>)}</select></label><label>Manual job colour<div className="colour-field"><input type="color" value={editor.color||palette[editor.category]} onChange={e=>setEditor({...editor,color:e.target.value})}/><input value={editor.color||palette[editor.category]} onChange={e=>setEditor({...editor,color:e.target.value})}/></div></label>
+    </div><footer>{editor.id?<button className="delete-button" onClick={()=>removeJob(editor.id)}>🗑 Delete job</button>:<span/>}<div><button className="button ghost" onClick={()=>setEditor(null)}>Cancel</button><button className="button primary" onClick={saveEditor}>Save job</button></div></footer></section></div>}
+    {notice&&<div className="toast">✓ {notice}</div>}
+  </main>;
+}
