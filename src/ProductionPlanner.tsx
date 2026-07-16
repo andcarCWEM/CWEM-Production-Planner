@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type Category = "external" | "press" | "internal" | "setup" | "urgent" | "unavailable";
+type Category = "cwemExternal" | "cmsClient" | "cmiClient" | "cmiStock" | "pressAssembly" | "cwemStock" | "internal" | "urgent" | "unavailable";
 type Operator = { id: string; name: string; detail: string };
 type Job = {
   id: string; title: string; description: string; operatorId: string | null;
@@ -16,13 +16,20 @@ const TOTAL_MINUTES = DAY_LENGTHS.reduce((a, b) => a + b, 0);
 const OPERATOR_HEIGHT = 96;
 const LANE_HEIGHT = 32;
 const palette: Record<Category, string> = {
-  external: "#1677b9", press: "#398c57", internal: "#d27b2c",
-  setup: "#7954a2", urgent: "#c94b4b", unavailable: "#7c8992",
+  cwemExternal: "#d32f2f", cmsClient: "#f4c430", cmiClient: "#64b5f6",
+  cmiStock: "#123a5a", pressAssembly: "#2e7d32", cwemStock: "#81c784",
+  internal: "#d9dee3", urgent: "#f57c00", unavailable: "#555b61",
 };
 const categories: { id: Category; label: string }[] = [
-  { id: "external", label: "External Client" }, { id: "press", label: "Press Build" },
-  { id: "internal", label: "Internal Support" }, { id: "setup", label: "Machine Setup" },
-  { id: "urgent", label: "Urgent / Overdue" }, { id: "unavailable", label: "Unavailable" },
+  { id: "cwemExternal", label: "CWEM External Client" },
+  { id: "cmsClient", label: "CMS Client" },
+  { id: "cmiClient", label: "CMI Client" },
+  { id: "cmiStock", label: "CMI Stock" },
+  { id: "pressAssembly", label: "Press/Assembly Build" },
+  { id: "cwemStock", label: "CWEM Stock Parts" },
+  { id: "internal", label: "Internal Support" },
+  { id: "urgent", label: "Urgent/Overdue" },
+  { id: "unavailable", label: "Unavailable" },
 ];
 const mondayOf = (date: Date) => { const d=new Date(date),day=d.getDay(); d.setDate(d.getDate()-(day===0?6:day-1)); d.setHours(0,0,0,0); return d; };
 const addDays = (date: Date, n: number) => { const d=new Date(date); d.setDate(d.getDate()+n); return d; };
@@ -48,8 +55,10 @@ const jobGlobalStart = (job:Job) => weekGlobalStart(job.week)+dayOffset(job.day)
 const positionFromGlobal = (global:number) => { let weekIndex=Math.floor(global/TOTAL_MINUTES),within=global-weekIndex*TOTAL_MINUTES; if(within<0){weekIndex--;within+=TOTAL_MINUTES;} const placed=absoluteToDay(Math.min(within,TOTAL_MINUTES-15)); return {week:keyFromOrdinal(EPOCH_MONDAY+weekIndex*7),day:placed.day,start:placed.start}; };
 const dateTimeFromGlobal = (global:number,preferEnd=false) => { let weekIndex=Math.floor(global/TOTAL_MINUTES),within=global-weekIndex*TOTAL_MINUTES; if(within<0){weekIndex--;within+=TOTAL_MINUTES;} if(preferEnd&&within===0){weekIndex--;within=TOTAL_MINUTES;} let day=0,minute=within; for(;day<5;day++){if(minute<DAY_LENGTHS[day]||(!preferEnd&&minute===0))break;if(preferEnd&&minute===DAY_LENGTHS[day])break;minute-=DAY_LENGTHS[day];} day=Math.min(day,4); return {date:keyFromOrdinal(EPOCH_MONDAY+weekIndex*7+day),time:timeLabel(START+minute)}; };
 const globalFromDateTime = (date:string,time:string,isEnd=false) => { if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return null; const ordinal=dateOrdinal(date),weekday=new Date(ordinal*86400000).getUTCDay(),day=weekday-1,clock=parseTime(time); if(day<0||day>4||clock===null)return null; const offset=clock-START,length=DAY_LENGTHS[day]; if(offset<0||offset>length||(!isEnd&&offset===length))return null; const mondayOrdinal=ordinal-day,weekIndex=Math.round((mondayOrdinal-EPOCH_MONDAY)/7); return weekIndex*TOTAL_MINUTES+dayOffset(day)+offset; };
-const blankJob = (week=CURRENT_WEEK): Job => ({ id:"",title:"",description:"",operatorId:null,day:0,start:0,duration:60,lane:0,category:"external",color:palette.external,machine:"",due:"",quantity:"",week });
-const normalizeJob = (j: Partial<Job>): Job => ({ ...blankJob(), ...j, week:normalizeWeekKey(j.week||CURRENT_WEEK), lane:Math.max(0,Math.min(2,j.lane??0)), color:j.color||palette[j.category||"external"] } as Job);
+const legacyCategories: Record<string,Category> = { external:"cwemExternal", press:"pressAssembly", setup:"internal", internal:"internal", urgent:"urgent", unavailable:"unavailable" };
+const legacyColours: Record<string,string> = { external:"#1677b9", press:"#398c57", internal:"#d27b2c", setup:"#7954a2", urgent:"#c94b4b", unavailable:"#7c8992" };
+const blankJob = (week=CURRENT_WEEK): Job => ({ id:"",title:"",description:"",operatorId:null,day:0,start:0,duration:60,lane:0,category:"cwemExternal",color:palette.cwemExternal,machine:"",due:"",quantity:"",week });
+const normalizeJob = (j: Partial<Job>): Job => { const legacy=legacyCategories[String(j.category)],category=(categories.some(c=>c.id===j.category)?j.category:legacy)||"cwemExternal",oldPreset=legacyColours[String(j.category)],color=!j.color||(legacy&&j.color.toLowerCase()===oldPreset)?palette[category]:j.color; return ({ ...blankJob(), ...j, category, week:normalizeWeekKey(j.week||CURRENT_WEEK), lane:Math.max(0,Math.min(2,j.lane??0)), color } as Job); };
 
 export default function ProductionPlanner(){
   const [operators,setOperators]=useState(initialOperators);
