@@ -137,23 +137,23 @@ button { cursor:pointer; }
   .print-title { height:32px; display:flex; align-items:center; border-bottom:3px solid #0070c0; margin-bottom:3px; }
   .print-title>div { display:flex; align-items:baseline; gap:5px; color:#102438; }.print-title>div strong{font-size:18px}.print-title>div span{font-size:7px;letter-spacing:.12em}
   .print-title h1 { margin:0 0 0 24px; font-size:15px; }.print-title p{margin-left:auto;font-size:8px;font-weight:700}
-  .print-colour-key { height:19px; display:flex; align-items:center; justify-content:center; gap:11px; font-size:6px; }
+  .print-colour-key { height:18px; display:flex; align-items:center; justify-content:center; gap:10px; font-size:7px; font-weight:600; }
   .print-colour-key span{display:flex;align-items:center;gap:3px}.print-colour-key i{width:6px;height:6px;border-radius:50%}
-  .print-week { margin:0 0 4px; break-inside:avoid; page-break-inside:avoid; }
-  .print-week h2 { height:16px; margin:0; padding:2px 6px; background:#102438; color:#fff; font-size:9px; display:flex; align-items:center; }
-  .print-week h2 span { margin-left:8px; font-size:7px; font-weight:400; opacity:.85; }
-  .print-schedule { display:grid; grid-template-columns:105px 1fr; grid-template-rows:22px 216px; border:1px solid #9eabb4; border-top:0; }
-  .print-operator-head { padding:7px 5px; border-right:1px solid #9eabb4; border-bottom:1px solid #9eabb4; background:#edf1f3; font-size:6px; font-weight:800; }
+  .print-week { margin:0 0 3px; break-inside:avoid; page-break-inside:avoid; }
+  .print-week h2 { height:15px; margin:0; padding:2px 6px; background:#102438; color:#fff; font-size:10px; display:flex; align-items:center; }
+  .print-week h2 span { margin-left:8px; font-size:8px; font-weight:500; opacity:.9; }
+  .print-schedule { display:grid; grid-template-columns:115px 1fr; grid-template-rows:20px 192px; border:1px solid #9eabb4; border-top:0; }
+  .print-operator-head { padding:6px 5px; border-right:1px solid #9eabb4; border-bottom:1px solid #9eabb4; background:#edf1f3; font-size:8px; font-weight:800; }
   .print-day-head { display:grid; border-bottom:1px solid #9eabb4; background:#edf1f3; }
-  .print-day-head>div { border-right:1px solid #aab5bc; padding:3px 5px; display:flex; justify-content:space-between; align-items:center; }
-  .print-day-head strong { font-size:7px; }.print-day-head span{font-size:5px;color:#52616c}
+  .print-day-head>div { border-right:1px solid #aab5bc; padding:2px 5px; display:flex; justify-content:space-between; align-items:center; }
+  .print-day-head strong { font-size:9px; }.print-day-head span{font-size:7px;color:#52616c;font-weight:600}
   .print-operators { border-right:1px solid #9eabb4; }
-  .print-operators>div { height:27px; border-bottom:1px solid #cfd7dc; padding:8px 5px; font-size:7px; }
-  .print-timeline { position:relative; height:216px; overflow:hidden; }
-  .print-grid-row { height:27px; border-bottom:1px solid #cfd7dc; }
-  .print-grid-row i { display:block; height:9px; border-bottom:1px dotted #e2e7ea; }
+  .print-operators>div { height:24px; border-bottom:1px solid #cfd7dc; padding:7px 5px; font-size:9px; }
+  .print-timeline { position:relative; height:192px; overflow:hidden; }
+  .print-grid-row { height:24px; border-bottom:1px solid #cfd7dc; }
+  .print-grid-row i { display:block; height:8px; border-bottom:1px dotted #e2e7ea; }
   .print-day-line { position:absolute; top:0; bottom:0; border-left:1px solid #9eabb4; }
-  .print-job { position:absolute; height:7px; min-width:5px; overflow:hidden; padding:0 2px; border-radius:1px; display:flex; align-items:center; gap:2px; box-shadow:inset 0 0 0 .3px #0005; }
-  .print-job strong { font-size:5px; line-height:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }.print-job span{font-size:4px;opacity:.8;white-space:nowrap}
-  .print-footer { margin-top:2px; text-align:right; font-size:6px; color:#64737e; }
+  .print-job { position:absolute; height:8px; min-width:5px; overflow:hidden; padding:0 3px; border-radius:1px; display:flex; align-items:center; box-shadow:inset 0 0 0 .3px #0005; }
+  .print-job strong { font-size:7px; line-height:8px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }.print-job span{display:none}
+  .print-footer { margin-top:2px; text-align:right; font-size:8px; color:#64737e; }
 }
