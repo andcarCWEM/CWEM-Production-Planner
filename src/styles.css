@@ -157,3 +157,43 @@ button { cursor:pointer; }
   .print-job strong { font-size:7px; line-height:8px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }.print-job span{display:none}
   .print-footer { margin-top:2px; text-align:right; font-size:8px; color:#64737e; }
 }
+
+
+/* Full working-month overview */
+.view-switch{display:inline-flex;border:1px solid #cbd5df;border-radius:8px;overflow:hidden;background:#fff}
+.view-switch button{border:0;border-radius:0;background:#fff;color:#526273;padding:7px 12px;font-weight:800;cursor:pointer}
+.view-switch button+button{border-left:1px solid #cbd5df}
+.view-switch button.active{background:#123a5a;color:#fff}
+.month-view{display:grid;grid-template-columns:185px minmax(0,1fr);grid-template-rows:58px auto auto;min-width:0;background:#fff}
+.month-resource-head{grid-column:1;grid-row:1;display:flex;flex-direction:column;justify-content:center;padding:0 15px;border-right:1px solid #cbd5df;border-bottom:1px solid #cbd5df;background:#f2f5f7}
+.month-resource-head strong{font-size:11px;letter-spacing:.08em;color:#123a5a}
+.month-resource-head span{font-size:10px;color:#667685;margin-top:3px}
+.month-head{grid-column:2;grid-row:1;display:grid;min-width:0;border-bottom:1px solid #cbd5df;background:#f2f5f7}
+.month-week-head{min-width:0;border-right:2px solid #8ea1b1;text-align:center;overflow:hidden}
+.month-week-head>strong{display:block;height:24px;padding:5px 2px 0;font-size:9px;color:#123a5a;white-space:nowrap}
+.month-week-head>div{display:grid;height:34px}
+.month-week-head span{display:flex;align-items:center;justify-content:center;gap:3px;border-left:1px solid #dbe2e8;font-size:8px;color:#526273;min-width:0}
+.month-week-head span b{font-size:9px;color:#123a5a}
+.month-week-head span.outside-month{opacity:.38;background:#e7ebee}
+.month-resources{grid-column:1;grid-row:2;border-right:1px solid #cbd5df}
+.month-resource-row{height:72px;display:flex;align-items:center;gap:8px;padding:0 10px;border-bottom:1px solid #dbe2e8;min-width:0}
+.month-resource-row .avatar{width:27px;height:27px;font-size:10px;flex:0 0 27px}
+.month-resource-row .operator-name{min-width:0;text-align:left}
+.month-resource-row .operator-name strong,.month-resource-row .operator-name small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.month-timeline{grid-column:2;grid-row:2;position:relative;min-width:0;overflow:hidden;background:#fff}
+.month-grid-row{height:72px;border-bottom:1px solid #dbe2e8;position:relative;background:linear-gradient(to bottom,transparent 23px,#e8edf1 23px,#e8edf1 24px,transparent 24px,transparent 47px,#e8edf1 47px,#e8edf1 48px,transparent 48px)}
+.month-grid-line{position:absolute;top:0;bottom:0;width:1px;background:#e2e8ed;pointer-events:none}
+.month-grid-line.week-line{width:2px;background:#8ea1b1}
+.month-job{position:absolute;height:19px;min-width:3px;border-radius:3px;padding:2px 4px;box-sizing:border-box;overflow:hidden;box-shadow:0 1px 2px rgba(15,35,50,.22);cursor:pointer;white-space:nowrap;line-height:1}
+.month-job strong{display:block;font-size:8px;overflow:hidden;text-overflow:ellipsis}
+.month-job span{display:block;font-size:7px;opacity:.9;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.month-job.continues-left{border-radius:0 3px 3px 0}
+.month-job.continues-right{border-radius:3px 0 0 3px}
+.month-help{grid-column:1 / -1;grid-row:3;margin:0;padding:8px 14px;border-top:1px solid #dbe2e8;background:#f8fafb;color:#667685;font-size:11px;text-align:right}
+@media(max-width:900px){
+  .month-view{grid-template-columns:130px minmax(0,1fr)}
+  .month-week-head>strong{font-size:8px}
+  .month-week-head span{font-size:0}
+  .month-week-head span b{font-size:8px}
+  .autosave{display:none}
+}
