@@ -74,7 +74,7 @@ export default function ProductionPlanner(){
   const [endDateText,setEndDateText]=useState(CURRENT_WEEK);
   const [showBacklog,setShowBacklog]=useState(true);
   const [notice,setNotice]=useState("");
-  const boardRef=useRef<HTMLDivElement>(null),fileRef=useRef<HTMLInputElement>(null),hydrated=useRef(false);
+  const boardRef=useRef<HTMLDivElement>(null),monthBoardRef=useRef<HTMLDivElement>(null),fileRef=useRef<HTMLInputElement>(null),hydrated=useRef(false);
 
   useEffect(()=>{ try{ const saved=localStorage.getItem("cwem-production-planner-v1"); if(saved){ const data=JSON.parse(saved); if(Array.isArray(data.jobs))setJobs(data.jobs.map(normalizeJob)); if(Array.isArray(data.operators))setOperators(data.operators); } }catch{} hydrated.current=true; },[]);
   useEffect(()=>{ if(hydrated.current)localStorage.setItem("cwem-production-planner-v1",JSON.stringify({jobs,operators})); },[jobs,operators]);
@@ -116,6 +116,13 @@ export default function ProductionPlanner(){
     const onUp=()=>{window.removeEventListener("pointermove",onMove);window.removeEventListener("pointerup",onUp);flash("Schedule updated");};window.addEventListener("pointermove",onMove);window.addEventListener("pointerup",onUp);
   };
 
+  const beginMonthPointer=(e:React.PointerEvent,job:Job)=>{
+    e.preventDefault();e.stopPropagation();setSelectedId(job.id);const board=monthBoardRef.current;if(!board)return;
+    const startX=e.clientX,startY=e.clientY,original={...job},width=board.getBoundingClientRect().width;
+    const onMove=(ev:PointerEvent)=>{const delta=Math.round(((ev.clientX-startX)/width*monthTotalMinutes)/15)*15;setJobs(old=>old.map(j=>{if(j.id!==job.id)return j;const placed=positionFromGlobal(jobGlobalStart(original)+delta),oldOp=operators.findIndex(o=>o.id===original.operatorId),oldTrack=oldOp*3+(original.lane||0),track=Math.max(0,Math.min(operators.length*3-1,oldTrack+Math.round((ev.clientY-startY)/24)));return{...j,week:placed.week,day:placed.day,start:placed.start,operatorId:operators[Math.floor(track/3)]?.id||j.operatorId,lane:track%3};}));};
+    const onUp=()=>{window.removeEventListener("pointermove",onMove);window.removeEventListener("pointerup",onUp);flash("Schedule updated");};window.addEventListener("pointermove",onMove);window.addEventListener("pointerup",onUp);
+  };
+
   const exportData=()=>{const blob=new Blob([JSON.stringify({version:2,exported:new Date().toISOString(),operators,jobs},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`CWEM-production-plan-${dateKey(weekStart)}.json`;a.click();URL.revokeObjectURL(a.href);flash("Backup downloaded");};
   const importData=async(e:React.ChangeEvent<HTMLInputElement>)=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data.jobs)||!Array.isArray(data.operators))throw new Error();setJobs(data.jobs.map(normalizeJob));setOperators(data.operators);flash("Plan restored");}catch{flash("That backup could not be read");}e.target.value="";};
   const scheduleBacklog=(job:Job,operatorId:string)=>setJobs(old=>old.map(j=>j.id===job.id?{...j,operatorId,lane:0}:j));
@@ -138,10 +145,10 @@ export default function ProductionPlanner(){
         <div className="month-resource-head"><strong>OPERATORS</strong><span>Three concurrent job lanes</span></div>
         <div className="month-head" style={{gridTemplateColumns:`repeat(${monthWeeks}, minmax(0, 1fr))`}}>{Array.from({length:monthWeeks},(_,weekIndex)=>{const week=addDays(monthGridStart,weekIndex*7);return <div className="month-week-head" key={weekIndex}><strong>Week of {prettyDate(week)}</strong><div style={{gridTemplateColumns:DAY_LENGTHS.map(n=>`${n}fr`).join(" ")}}>{DAY_LENGTHS.map((_,day)=>{const date=addDays(week,day);return <span className={date.getMonth()===monthDate.getMonth()?"":"outside-month"} key={day}>{date.toLocaleDateString("en-GB",{weekday:"short"})}<b>{date.getDate()}</b></span>;})}</div></div>;})}</div>
         <div className="month-resources">{operators.map(op=><div className="month-resource-row" key={op.id}><span className="avatar">{op.name.replace("Operator ","").slice(0,2)}</span><button className="operator-name" onClick={()=>editOperator(op)}><strong>{op.name}</strong><small>{op.detail}</small></button></div>)}</div>
-        <div className="month-timeline" style={{height:operators.length*72}}>
+        <div className="month-timeline" ref={monthBoardRef} style={{height:operators.length*72}} onClick={()=>setSelectedId(null)}>
           {operators.map(op=><div className="month-grid-row" key={op.id}><i/><i/><i/></div>)}
           {Array.from({length:monthWeeks},(_,weekIndex)=>DAY_LENGTHS.map((_,day)=><i className={`month-grid-line ${day===0?"week-line":""}`} style={{left:`${(weekIndex*TOTAL_MINUTES+dayOffset(day))/monthTotalMinutes*100}%`}} key={`${weekIndex}-${day}`}/>))}
-          {monthJobs.map(job=>{const row=operators.findIndex(o=>o.id===job.operatorId),start=jobGlobalStart(job),end=start+job.duration,segmentStart=Math.max(start,monthGlobalStart),segmentEnd=Math.min(end,monthGlobalStart+monthTotalMinutes),background=job.color||palette[job.category];if(row<0||segmentEnd<=segmentStart)return null;return <article className={`month-job ${start<monthGlobalStart?"continues-left":""} ${end>monthGlobalStart+monthTotalMinutes?"continues-right":""}`} key={job.id} style={{left:`${(segmentStart-monthGlobalStart)/monthTotalMinutes*100}%`,width:`${(segmentEnd-segmentStart)/monthTotalMinutes*100}%`,top:row*72+(job.lane||0)*24+3,backgroundColor:background,color:contrastText(background)}} onDoubleClick={()=>openEditor(job)} title={`${job.title}\n${job.description}\nDouble-click to edit`}><strong>{start<monthGlobalStart?"← ":""}{job.title}{end>monthGlobalStart+monthTotalMinutes?" →":""}</strong><span>{job.machine||job.description}</span></article>;})}
+          {monthJobs.map(job=>{const row=operators.findIndex(o=>o.id===job.operatorId),start=jobGlobalStart(job),end=start+job.duration,segmentStart=Math.max(start,monthGlobalStart),segmentEnd=Math.min(end,monthGlobalStart+monthTotalMinutes),background=job.color||palette[job.category];if(row<0||segmentEnd<=segmentStart)return null;return <article className={`month-job ${start<monthGlobalStart?"continues-left":""} ${end>monthGlobalStart+monthTotalMinutes?"continues-right":""} ${selectedId===job.id?"selected":""}`} key={job.id} style={{left:`${(segmentStart-monthGlobalStart)/monthTotalMinutes*100}%`,width:`${(segmentEnd-segmentStart)/monthTotalMinutes*100}%`,top:row*72+(job.lane||0)*24+3,backgroundColor:background,color:contrastText(background)}} onPointerDown={e=>beginMonthPointer(e,job)} onDoubleClick={()=>openEditor(job)} title={`${job.title}\n${job.description}\nDouble-click to edit`}><strong>{start<monthGlobalStart?"← ":""}{job.title}{end>monthGlobalStart+monthTotalMinutes?" →":""}</strong><span>{job.machine||job.description}</span></article>;})}
         </div>
         <p className="month-help">Full working-month overview · weekends are excluded · double-click a job to edit it</p>
       </div>}
