@@ -198,3 +198,10 @@ button { cursor:pointer; }
   .autosave{display:none}
 }
 \n.month-job:active{cursor:grabbing}\n
+
+/* Job right-click copy and paste */
+.job-context-menu{position:fixed;z-index:2000;width:190px;padding:6px;background:#fff;border:1px solid #b8c5d0;border-radius:8px;box-shadow:0 10px 30px rgba(15,35,50,.24)}
+.job-context-menu .context-job-name{padding:7px 9px 5px;color:#667685;font-size:10px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px solid #e2e8ed}
+.job-context-menu button{display:block;width:100%;padding:9px;border:0;border-radius:5px;background:#fff;color:#123a5a;text-align:left;font-weight:800;cursor:pointer}
+.job-context-menu button:hover:not(:disabled){background:#e9f2f8}
+.job-context-menu button:disabled{color:#98a5af;cursor:not-allowed}
