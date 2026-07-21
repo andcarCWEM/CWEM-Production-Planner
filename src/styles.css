@@ -214,3 +214,9 @@ button { cursor:pointer; }
 .month-resize:hover{background:rgba(255,255,255,.58)}
 .month-job:has(.month-resize.left)>strong,.month-job:has(.month-resize.left)>span{padding-left:5px}
 .month-job:has(.month-resize.right)>strong,.month-job:has(.month-resize.right)>span{padding-right:5px}
+
+
+/* 15-minute detail grid (Day and Week views only) */
+.grid-line.quarter{width:1px;background:rgba(34,70,95,.10);pointer-events:none}
+.grid-line.quarter.hour{background:rgba(34,70,95,.24)}
+.grid-line.major{z-index:1}
