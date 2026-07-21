@@ -40,10 +40,10 @@ const shiftWorkingDay = (date:Date,amount:number) => {const d=new Date(date),ste
 const dateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const CURRENT_WEEK = dateKey(mondayOf(new Date()));
 const initialOperators: Operator[] = [
-  {id:"op-1",name:"AB",detail:"CNC Production"},
-  {id:"op-2",name:"JA",detail:"CNC Production"},
-  {id:"op-3",name:"MM",detail:"CNC Production"},
-  {id:"op-4",name:"WB",detail:"Manual Production"},
+  {id:"op-1",name:"AB",detail:"CNC Machinist"},
+  {id:"op-2",name:"JA",detail:"CNC Machinist"},
+  {id:"op-3",name:"MM",detail:"CNC Machinist"},
+  {id:"op-4",name:"WB",detail:"Manual Machinist"},
   {id:"op-5",name:"DH",detail:"Assembly Engineer"},
   {id:"op-6",name:"ND",detail:"Assembly Engineer"},
   {id:"op-7",name:"SB",detail:"Assembly Engineer"},
