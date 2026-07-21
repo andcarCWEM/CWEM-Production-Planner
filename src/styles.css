@@ -205,3 +205,12 @@ button { cursor:pointer; }
 .job-context-menu button{display:block;width:100%;padding:9px;border:0;border-radius:5px;background:#fff;color:#123a5a;text-align:left;font-weight:800;cursor:pointer}
 .job-context-menu button:hover:not(:disabled){background:#e9f2f8}
 .job-context-menu button:disabled{color:#98a5af;cursor:not-allowed}
+
+
+/* Month-view job resize handles */
+.month-resize{position:absolute;top:0;bottom:0;width:7px;padding:0;border:0;background:rgba(255,255,255,.22);cursor:ew-resize;z-index:2;touch-action:none}
+.month-resize.left{left:0;border-radius:3px 0 0 3px}
+.month-resize.right{right:0;border-radius:0 3px 3px 0}
+.month-resize:hover{background:rgba(255,255,255,.58)}
+.month-job:has(.month-resize.left)>strong,.month-job:has(.month-resize.left)>span{padding-left:5px}
+.month-job:has(.month-resize.right)>strong,.month-job:has(.month-resize.right)>span{padding-right:5px}
