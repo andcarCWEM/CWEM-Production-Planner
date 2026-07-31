@@ -69,22 +69,32 @@ const shiftCollidingJobs = (jobs: Job[], movedId: string) => {
   const moved = jobs.find(job => job.id === movedId);
   if (!moved?.operatorId) return jobs;
   const movedStart = jobGlobalStart(moved);
-  let nextAvailable = movedStart + moved.duration;
   const laneJobs = jobs
     .filter(job => job.id !== movedId && job.operatorId === moved.operatorId && job.lane === moved.lane)
     .sort((a, b) => jobGlobalStart(a) - jobGlobalStart(b));
+
+  // Keep jobs before the insertion point fixed. If the drop lands inside one,
+  // place the incoming job immediately after it rather than rescheduling it.
+  const precedingEnd = laneJobs.reduce((end, job) => {
+    const start = jobGlobalStart(job);
+    return start < movedStart ? Math.max(end, start + job.duration) : end;
+  }, movedStart);
+  const placedMovedStart = Math.max(movedStart, precedingEnd);
+  const movedPosition = positionFromGlobal(placedMovedStart);
+  const movedWithPosition = { ...moved, week: movedPosition.week, day: movedPosition.day, start: movedPosition.start };
+  let nextAvailable = placedMovedStart + moved.duration;
 
   const shifted = new Map<string, Job>();
   laneJobs.forEach(job => {
     const start = jobGlobalStart(job);
     const end = start + job.duration;
-    if (end <= movedStart) return;
+    if (start < movedStart) return;
     const placedStart = Math.max(start, nextAvailable);
     const placed = positionFromGlobal(placedStart);
     shifted.set(job.id, { ...job, week: placed.week, day: placed.day, start: placed.start });
     nextAvailable = placedStart + job.duration;
   });
-  return jobs.map(job => shifted.get(job.id) || job);
+  return jobs.map(job => job.id === movedId ? movedWithPosition : shifted.get(job.id) || job);
 };
 const legacyCategories: Record<string,Category> = { external:"cwemExternal", press:"pressAssembly", setup:"internal", internal:"internal", urgent:"urgent", unavailable:"unavailable" };
 const legacyColours: Record<string,string> = { external:"#1677b9", press:"#398c57", internal:"#d27b2c", setup:"#7954a2", urgent:"#c94b4b", unavailable:"#7c8992" };
