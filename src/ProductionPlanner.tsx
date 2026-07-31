@@ -109,10 +109,12 @@ export default function ProductionPlanner(){
   const [copiedJob,setCopiedJob]=useState<Job|null>(null);
   const [contextMenu,setContextMenu]=useState<ContextMenu|null>(null);
   const [draggedJobId,setDraggedJobId]=useState<string|null>(null);
-  const boardRef=useRef<HTMLDivElement>(null),monthBoardRef=useRef<HTMLDivElement>(null),fileRef=useRef<HTMLInputElement>(null),hydrated=useRef(false);
+  const boardRef=useRef<HTMLDivElement>(null),monthBoardRef=useRef<HTMLDivElement>(null),fileRef=useRef<HTMLInputElement>(null),hydrated=useRef(false),jobsRef=useRef<Job[]>(initialJobs),undoStack=useRef<Job[][]>([]);
 
   useEffect(()=>{ try{ const saved=localStorage.getItem("cwem-production-planner-v1"); if(saved){ const data=JSON.parse(saved); if(Array.isArray(data.jobs))setJobs(data.jobs.map(normalizeJob).map((job:Job)=>job.operatorId==="op-8"?{...job,operatorId:null}:job)); if(Array.isArray(data.operators))setOperators(data.operators.filter((op:Operator)=>op.id!=="op-8").map((op:Operator)=>{const updated=initialOperators.find(item=>item.id===op.id);return updated?{...op,name:updated.name,detail:updated.detail}:op;})); } }catch{} hydrated.current=true; },[]);
   useEffect(()=>{ if(hydrated.current)localStorage.setItem("cwem-production-planner-v1",JSON.stringify({jobs,operators})); },[jobs,operators]);
+  useEffect(()=>{jobsRef.current=jobs;},[jobs]);
+  useEffect(()=>{const undo=(e:KeyboardEvent)=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();const previous=undoStack.current.pop();if(previous)setJobs(previous);else flash("Nothing to undo");}};window.addEventListener("keydown",undo);return()=>window.removeEventListener("keydown",undo);},[]);
   useEffect(()=>{const close=()=>setContextMenu(null),escape=(e:KeyboardEvent)=>{if(e.key==="Escape")close();};window.addEventListener("click",close);window.addEventListener("keydown",escape);return()=>{window.removeEventListener("click",close);window.removeEventListener("keydown",escape);};},[]);
 
   const currentWeekKey=dateKey(weekStart),currentWeekGlobal=weekGlobalStart(currentWeekKey);
@@ -151,9 +153,10 @@ export default function ProductionPlanner(){
   const dropTarget=(e:React.DragEvent,board:HTMLDivElement|null,total:number,globalStart:number,rowHeight:number,laneHeight:number):PasteTarget|null=>{if(!board||!draggedJobId)return null;const rect=board.getBoundingClientRect(),x=Math.max(0,Math.min(rect.width,e.clientX-rect.left)),y=Math.max(0,Math.min(rect.height-1,e.clientY-rect.top)),row=Math.max(0,Math.min(operators.length-1,Math.floor(y/rowHeight))),lane=Math.max(0,Math.min(2,Math.floor((y-row*rowHeight)/laneHeight)));return{global:globalStart+Math.round((x/rect.width*total)/15)*15,operatorId:operators[row].id,lane};};
   const reorderJob=(sourceId:string,targetId:string)=>{if(sourceId===targetId)return;setJobs(old=>{const source=old.findIndex(job=>job.id===sourceId),target=old.findIndex(job=>job.id===targetId);if(source<0||target<0)return old;const next=[...old],[item]=next.splice(source,1);next.splice(target,0,item);return next;});};
   const clearSchedule=()=>{if(!jobs.some(job=>job.operatorId)||!window.confirm("Clear the entire schedule? Jobs will remain available in the job list."))return;setJobs(old=>old.map(job=>({...job,operatorId:null})));setSelectedId(null);flash("Schedule cleared");};
+  const beginUndoableAction=()=>{undoStack.current.push(jobsRef.current.map(job=>({...job})));if(undoStack.current.length>100)undoStack.current.shift();};
 
   const beginPointer=(e:React.PointerEvent,job:Job,mode:"move"|"left"|"right")=>{
-    e.preventDefault();e.stopPropagation();setSelectedId(job.id);const board=boardRef.current;if(!board)return;
+    e.preventDefault();e.stopPropagation();beginUndoableAction();setSelectedId(job.id);const board=boardRef.current;if(!board)return;
     const startX=e.clientX,startY=e.clientY,original={...job},width=board.getBoundingClientRect().width;
     const onMove=(ev:PointerEvent)=>{const delta=Math.round(((ev.clientX-startX)/width*detailTotal)/15)*15;setJobs(old=>old.map(j=>{if(j.id!==job.id)return j;
       const originalGlobal=jobGlobalStart(original);
@@ -166,7 +169,7 @@ export default function ProductionPlanner(){
   };
 
   const beginMonthPointer=(e:React.PointerEvent,job:Job,mode:"move"|"left"|"right")=>{
-    e.preventDefault();e.stopPropagation();setSelectedId(job.id);const board=monthBoardRef.current;if(!board)return;
+    e.preventDefault();e.stopPropagation();beginUndoableAction();setSelectedId(job.id);const board=monthBoardRef.current;if(!board)return;
     const startX=e.clientX,startY=e.clientY,original={...job},width=board.getBoundingClientRect().width;
     const onMove=(ev:PointerEvent)=>{const delta=Math.round(((ev.clientX-startX)/width*monthTotalMinutes)/15)*15;setJobs(old=>old.map(j=>{if(j.id!==job.id)return j;const originalGlobal=jobGlobalStart(original);
       if(mode==="right")return{...j,duration:Math.max(15,original.duration+delta)};
