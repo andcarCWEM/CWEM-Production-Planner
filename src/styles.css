@@ -252,6 +252,13 @@ html, body, #root { width:100%; height:100%; overflow:hidden; }
 .month-backlog { min-width:0; }
 .job-content, .month-job, .backlog-job { font-family:"Myriad Pro Light Condensed","Segoe UI",Arial,sans-serif; font-weight:300; font-stretch:condensed; }
 .planner-toolbar, .summary-strip, .topbar, .legend, .modal, .job-context-menu { font-family:"Myriad Pro Light Condensed","Segoe UI",Arial,sans-serif; font-weight:300; font-stretch:normal; }
+.brand-copy span { font-size:8px; }
+.brand-copy h1 { font-size:18px; }
+.summary-strip span { font-size:9px; }
+.summary-strip strong { font-size:15px; }
+.week-nav h2 { font-size:14px; }
+.week-nav button.today, .backlog-toggle { font-size:11px; }
+.legend { font-size:9px; }
 .job-content strong { font-size:clamp(8px, .5vw, 11px); }
 .job-content span { font-size:clamp(7px, .38vw, 9px); }
 .month-job strong { font-size:clamp(7px, .4vw, 9px); }
