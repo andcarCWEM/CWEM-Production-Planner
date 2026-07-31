@@ -244,6 +244,7 @@ html, body, #root { width:100%; height:100%; overflow:hidden; }
 .backlog-job { cursor:grab; }
 .backlog-job:active { cursor:grabbing; }
 .modal-backdrop { width:min(100vw,2560px); justify-items:center; }
+.job-context-menu { left:clamp(24px,45vw,2100px) !important; }
 
 @media (min-width:3000px) {
   .planner-body.with-backlog { grid-template-columns:minmax(0,1fr) 360px; }
