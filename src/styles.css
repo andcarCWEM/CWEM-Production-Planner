@@ -263,6 +263,9 @@ html, body, #root { width:100%; height:100%; overflow:hidden; }
 .job-list-actions button, .backlog-head > button { font-family:"Myriad Pro Light Condensed","Segoe UI",Arial,sans-serif; font-size:10px !important; line-height:1; font-stretch:normal; }
 .topbar .button { font-family:"Myriad Pro Light Condensed","Segoe UI",Arial,sans-serif; font-size:10px !important; line-height:1; font-stretch:normal; padding:8px 11px; }
 .topbar .brand-copy h1 { font-size:17px !important; line-height:1; }
+.confirmation-body { padding:22px; color:var(--ink); font-size:13px; line-height:1.35; }
+.confirmation-body p { margin:0; }
+.confirmation-modal { width:min(480px,90%); }
 .job-content strong { font-size:clamp(8px, .5vw, 11px); }
 .job-content span { font-size:clamp(7px, .38vw, 9px); }
 .month-job strong { font-size:clamp(7px, .4vw, 9px); }
