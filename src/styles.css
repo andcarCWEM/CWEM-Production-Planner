@@ -266,7 +266,7 @@ html, body, #root { width:100%; height:100%; overflow:hidden; }
 .topbar .brand-copy h1 { font-size:17px !important; line-height:1; }
 .brand-mark { overflow:hidden; transform:none; padding:3px; }
 .brand-mark img { display:block; width:100%; height:100%; object-fit:contain; }
-.brand-mark { width:112px; height:52px; flex:0 0 112px; border:0; padding:0; background:transparent; }
+.brand-mark { width:112px; height:52px; flex:0 0 112px; border:none !important; outline:none; box-shadow:none; padding:0; background:transparent; }
 .brand-mark img { width:100%; height:100%; object-fit:contain; }
 .confirmation-body { padding:22px; color:var(--ink); font-size:13px; line-height:1.35; }
 .confirmation-body p { margin:0; }
