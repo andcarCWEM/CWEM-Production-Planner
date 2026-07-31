@@ -131,7 +131,7 @@ export default function ProductionPlanner(){
   const [draggedJobId,setDraggedJobId]=useState<string|null>(null);
   const bulkFileRef=useRef<HTMLInputElement>(null);
   const [confirmation,setConfirmation]=useState<{message:string;action:()=>void}|null>(null);
-  const [sortMode,setSortMode]=useState<"manual"|"revenue"|"priority"|"machine"|"operator"|"duration"|"allocated"|"unallocated"|"unavailability">("manual");
+  const [sortMode,setSortMode]=useState<"manual"|"revenue"|"priority"|"machine"|"operator"|"duration"|"allocated"|"unallocated"|"unavailability">("unallocated");
   const boardRef=useRef<HTMLDivElement>(null),monthBoardRef=useRef<HTMLDivElement>(null),fileRef=useRef<HTMLInputElement>(null),hydrated=useRef(false),jobsRef=useRef<Job[]>(initialJobs),undoStack=useRef<Job[][]>([]);
 
   useEffect(()=>{ try{ const saved=localStorage.getItem("cwem-production-planner-v1"); if(saved){ const data=JSON.parse(saved); if(Array.isArray(data.jobs))setJobs(data.jobs.map(normalizeJob).map((job:Job)=>job.operatorId==="op-8"?{...job,operatorId:null}:job)); if(Array.isArray(data.operators))setOperators(data.operators.filter((op:Operator)=>op.id!=="op-8").map((op:Operator)=>{const updated=initialOperators.find(item=>item.id===op.id);return updated?{...op,name:updated.name,detail:updated.detail}:op;})); } }catch{} hydrated.current=true; },[]);
