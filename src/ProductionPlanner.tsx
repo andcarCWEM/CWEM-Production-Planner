@@ -149,7 +149,9 @@ export default function ProductionPlanner(){
   const weekLabel=`${prettyDate(weekStart)} – ${prettyDate(addDays(weekStart,4))} ${addDays(weekStart,4).getFullYear()}`;
   const dayLabel=dayCursor.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   const monthDate=new Date(monthCursor.getFullYear(),monthCursor.getMonth(),1);
-  const monthGridStart=mondayOf(new Date());
+  // Keep the displayed four-week grid aligned with the selected month.
+  // Anchoring this to today made the month navigation buttons appear inert.
+  const monthGridStart=mondayOf(monthDate);
   const monthLast=new Date(monthDate.getFullYear(),monthDate.getMonth()+1,0);
   const monthLastWeek=mondayOf(monthLast);
   const monthWeeks=4;
