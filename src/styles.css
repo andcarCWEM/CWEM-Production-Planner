@@ -263,8 +263,8 @@ html, body, #root { width:100%; height:100%; overflow:hidden; }
 .view-switch button { font-family:"Myriad Pro Light Condensed","Segoe UI",Arial,sans-serif; font-size:10px !important; line-height:1; font-stretch:normal; padding:6px 10px; }
 .job-list-actions button, .backlog-head > button { font-family:"Myriad Pro Light Condensed","Segoe UI",Arial,sans-serif; font-size:10px !important; line-height:1; font-stretch:normal; }
 .topbar .button { font-family:"Myriad Pro Light Condensed","Segoe UI",Arial,sans-serif; font-size:10px !important; line-height:1; font-stretch:normal; padding:8px 11px; }
-.toolbar-colour-key { display:flex; align-items:center; gap:7px; max-width:420px; overflow:hidden; white-space:nowrap; }
-.toolbar-colour-key span { display:inline-flex; align-items:center; gap:3px; color:#61717d; font-size:8px; }
+.toolbar-colour-key { display:flex; align-items:center; flex-wrap:wrap; gap:4px 7px; max-width:min(720px,45vw); overflow:visible; }
+.toolbar-colour-key span { display:inline-flex; align-items:center; gap:3px; color:#61717d; font-size:8px; white-space:nowrap; }
 .toolbar-colour-key i { display:inline-block; width:7px; height:7px; flex:0 0 7px; border-radius:50%; }
 .topbar .brand-copy h1 { font-size:17px !important; line-height:1; }
 .brand-mark { overflow:hidden; transform:none; padding:3px; }
