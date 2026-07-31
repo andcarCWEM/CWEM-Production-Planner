@@ -88,6 +88,10 @@ const shiftCollidingJobs = (jobs: Job[], movedId: string) => {
   laneJobs.forEach(job => {
     const start = jobGlobalStart(job);
     const end = start + job.duration;
+    if (job.category === "unavailable") {
+      nextAvailable = Math.max(nextAvailable, end);
+      return;
+    }
     if (start < movedStart) return;
     const placedStart = Math.max(start, nextAvailable);
     const placed = positionFromGlobal(placedStart);
