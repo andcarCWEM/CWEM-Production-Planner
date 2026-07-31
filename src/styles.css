@@ -276,6 +276,8 @@ html, body, #root { width:100%; height:100%; overflow:hidden; }
 .job-status { display:inline-flex !important; align-self:flex-start; width:max-content; margin-top:6px; padding:3px 6px; border-radius:10px; background:#ffffffd9; color:#43535f; font-size:9px !important; font-weight:700; }
 .job-status.allocated { color:#176b45; }
 .job-status.unallocated { color:#8a5a1f; }
+.job-status { border:0; cursor:pointer; font-family:inherit; }
+.job-status:hover { filter:brightness(.94); }
 .job-content strong { font-size:clamp(8px, .5vw, 11px); }
 .job-content span { font-size:clamp(7px, .38vw, 9px); }
 .month-job strong { font-size:clamp(7px, .4vw, 9px); }
