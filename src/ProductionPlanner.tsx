@@ -111,7 +111,7 @@ export default function ProductionPlanner(){
   const [weekStart,setWeekStart]=useState(()=>mondayOf(new Date()));
   const [monthCursor,setMonthCursor]=useState(()=>{const now=new Date();return new Date(now.getFullYear(),now.getMonth(),1);});
   const [dayCursor,setDayCursor]=useState(()=>workingDay(new Date()));
-  const [viewMode,setViewMode]=useState<"day"|"week"|"month">("week");
+  const [viewMode,setViewMode]=useState<"day"|"week"|"month">("month");
   const [selectedId,setSelectedId]=useState<string|null>(null);
   const [editor,setEditor]=useState<Job|null>(null);
   const [startText,setStartText]=useState("07:00");
