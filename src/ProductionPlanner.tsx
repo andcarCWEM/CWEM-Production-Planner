@@ -159,6 +159,25 @@ export default function ProductionPlanner(){
   const shiftMonth=(amount:number)=>setMonthCursor(addDays(monthGridStart,amount*28));
   const metrics=useMemo(()=>{ const visible=viewMode==="month"?monthJobs:scheduled,planned=visible.reduce((n,j)=>{if(viewMode!=="month")return n+(segmentFor(j)?.duration||0);const start=Math.max(jobGlobalStart(j),monthGlobalStart),end=Math.min(jobGlobalStart(j)+j.duration,monthGlobalStart+monthTotalMinutes);return n+Math.max(0,end-start);},0)/60,capacity=operators.length*((viewMode==="month"?monthTotalMinutes:detailTotal)/60); return {planned,utilisation:capacity?Math.round(planned/capacity*100):0,urgent:visible.filter(j=>j.category==="urgent").length}; },[scheduled,operators,jobs,currentWeekGlobal,dayGlobalStart,detailTotal,viewMode,monthGlobalStart,monthTotalMinutes,monthWeeks]);
   const flash=(message:string)=>{setNotice(message);window.setTimeout(()=>setNotice(""),1800);};
+  useEffect(()=>{
+    const handleClipboardShortcut=(e:KeyboardEvent)=>{
+      if(!(e.ctrlKey||e.metaKey)||["INPUT","TEXTAREA","SELECT"].includes((e.target as HTMLElement)?.tagName))return;
+      if(e.key.toLowerCase()==="c"){
+        const selected=jobsRef.current.find(job=>job.id===selectedId);
+        if(!selected)return;
+        e.preventDefault();
+        setCopiedJob({...selected});
+        setContextMenu(null);
+        flash(`${selected.title} copied — right-click a destination slot and press Ctrl+V`);
+      }
+      if(e.key.toLowerCase()==="v"&&contextMenu?.target&&copiedJob){
+        e.preventDefault();
+        pasteJob(contextMenu.target);
+      }
+    };
+    window.addEventListener("keydown",handleClipboardShortcut);
+    return()=>window.removeEventListener("keydown",handleClipboardShortcut);
+  },[selectedId,copiedJob,contextMenu]);
   const openEditor=(job:Job)=>{const start=jobGlobalStart(job),end=start+job.duration,startDT=dateTimeFromGlobal(start),endDT=dateTimeFromGlobal(end,true);setEditor({...job,week:job.week||currentWeekKey});setStartDateText(startDT.date);setStartText(startDT.time);setEndDateText(endDT.date);setEndText(endDT.time);setEstimatedHoursText((job.duration/60).toFixed(2));};
   const saveEditor=()=>{if(!editor||!editor.title.trim())return;const startGlobal=globalFromDateTime(startDateText,startText),manualEndGlobal=globalFromDateTime(endDateText,endText,true),estimatedHours=Number(estimatedHoursText);if(startGlobal===null){flash("Choose a weekday and a start time within working hours");return;}const endGlobal=Number.isFinite(estimatedHours)&&estimatedHours>0?startGlobal+estimatedHours*60:manualEndGlobal;if(endGlobal===null){flash("Enter a valid estimated job duration");return;}if(endGlobal<=startGlobal){flash("Estimated hours must be greater than zero");return;}const placed=positionFromGlobal(startGlobal),next={...editor,id:editor.id||`job-${Date.now()}`,week:placed.week,day:placed.day,start:placed.start,duration:endGlobal-startGlobal,lane:Math.max(0,Math.min(2,editor.lane)),color:editor.color||palette[editor.category]};setJobs(old=>{const updated=editor.id?old.map(j=>j.id===editor.id?next:j):[...old,next];return next.operatorId?shiftCollidingJobs(updated,next.id):updated;});setEditor(null);flash(editor.id?"Job updated":"Job added");};
   const removeJob=(id:string)=>setConfirmation({message:"Delete this job?",action:()=>{setJobs(old=>old.filter(j=>j.id!==id));setEditor(null);setSelectedId(null);flash("Job deleted");}});
