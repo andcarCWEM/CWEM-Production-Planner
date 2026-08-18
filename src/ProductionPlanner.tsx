@@ -197,7 +197,7 @@ export default function ProductionPlanner(){
   const beginUndoableAction=()=>{undoStack.current.push(jobsRef.current.map(job=>({...job})));if(undoStack.current.length>100)undoStack.current.shift();};
 
   const beginPointer=(e:React.PointerEvent,job:Job,mode:"move"|"left"|"right")=>{
-    e.preventDefault();e.stopPropagation();beginUndoableAction();setSelectedId(job.id);const board=boardRef.current;if(!board)return;
+    e.preventDefault();e.stopPropagation();beginUndoableAction();setSelectedId(job.id);window.setTimeout(()=>setSelectedId(job.id),0);const board=boardRef.current;if(!board)return;
     const startX=e.clientX,startY=e.clientY,original={...job},width=board.getBoundingClientRect().width;
     const onMove=(ev:PointerEvent)=>{const delta=Math.round(((ev.clientX-startX)/width*detailTotal)/15)*15;setJobs(old=>old.map(j=>{if(j.id!==job.id)return j;
       const originalGlobal=jobGlobalStart(original);
@@ -210,7 +210,7 @@ export default function ProductionPlanner(){
   };
 
   const beginMonthPointer=(e:React.PointerEvent,job:Job,mode:"move"|"left"|"right")=>{
-    e.preventDefault();e.stopPropagation();beginUndoableAction();setSelectedId(job.id);const board=monthBoardRef.current;if(!board)return;
+    e.preventDefault();e.stopPropagation();beginUndoableAction();setSelectedId(job.id);window.setTimeout(()=>setSelectedId(job.id),0);const board=monthBoardRef.current;if(!board)return;
     const startX=e.clientX,startY=e.clientY,original={...job},width=board.getBoundingClientRect().width;
     const onMove=(ev:PointerEvent)=>{const delta=Math.round(((ev.clientX-startX)/width*monthTotalMinutes)/15)*15;setJobs(old=>old.map(j=>{if(j.id!==job.id)return j;const originalGlobal=jobGlobalStart(original);
       if(mode==="right")return{...j,duration:Math.max(15,original.duration+delta)};
