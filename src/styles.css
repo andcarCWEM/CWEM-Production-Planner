@@ -70,7 +70,7 @@ button { cursor:pointer; }
 .grid-line.major { border-left:1px solid #cdd7de; }
 .job-bar { position:absolute; height:24px; min-width:14px; border-radius:3px; color:#fff; box-shadow:0 1px 3px #1a2c3b38; user-select:none; overflow:visible; cursor:grab; z-index:2; border-left:3px solid #ffffff60; }
 .job-bar:active { cursor:grabbing; z-index:5; }
-.job-bar.selected { outline:2px solid #0d2537; outline-offset:2px; z-index:4; }
+.job-bar.selected { outline:3px solid #ffd43b; outline-offset:3px; z-index:20; box-shadow:0 0 0 2px #102438,0 0 14px #ffd43bcc; filter:saturate(1.2) brightness(1.08); }
 .job-bar.continues-left { border-radius:0 3px 3px 0; border-left:0; }
 .job-bar.continues-right { border-radius:3px 0 0 3px; }
 .job-bar.continues-left.continues-right { border-radius:0; }
@@ -190,6 +190,7 @@ button { cursor:pointer; }
 .month-job span{display:block;font-size:7px;opacity:.9;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .month-job.continues-left{border-radius:0 3px 3px 0}
 .month-job.continues-right{border-radius:3px 0 0 3px}
+.month-job.selected { outline:3px solid #ffd43b; outline-offset:3px; z-index:20; box-shadow:0 0 0 2px #102438,0 0 14px #ffd43bcc; filter:saturate(1.2) brightness(1.08); }
 .month-help{grid-column:1 / -1;grid-row:3;margin:0;padding:8px 14px;border-top:1px solid #dbe2e8;background:#f8fafb;color:#667685;font-size:11px;text-align:right}
 @media(max-width:900px){
   .month-view{grid-template-columns:130px minmax(0,1fr)}
