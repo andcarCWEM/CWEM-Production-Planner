@@ -108,10 +108,12 @@ const legacyColours: Record<string,string> = { external:"#1677b9", press:"#398c5
 const blankJob = (week=CURRENT_WEEK): Job => ({ id:"",title:"",description:"",operatorId:null,day:0,start:0,duration:60,lane:0,category:"cwemExternal",color:palette.cwemExternal,machine:"",due:"",quantity:"",priority:0,week,onHold:false,onHoldReason:"" });
 const normalizeJob = (j: Partial<Job>): Job => { const legacy=legacyCategories[String(j.category)],category=(categories.some(c=>c.id===j.category)?j.category:legacy)||"cwemExternal",oldPreset=legacyColours[String(j.category)],color=!j.color||(legacy&&j.color.toLowerCase()===oldPreset)?palette[category]:j.color,onHold=Boolean(j.onHold); return ({ ...blankJob(), ...j, operatorId:onHold?null:(j.operatorId??null), onHold, onHoldReason:String(j.onHoldReason||""), category, priority:Number(j.priority)||0, week:normalizeWeekKey(j.week||CURRENT_WEEK), lane:Math.max(0,Math.min(2,j.lane??0)), color } as Job); };
 const parseCsv = (text:string) => text.trim().split(/\r?\n/).filter(Boolean).map(line=>{const cells:string[]=[];let value="",quoted=false;for(let i=0;i<line.length;i++){const char=line[i];if(char==='"'&&line[i+1]==='"'){value+='"';i++;}else if(char==='"')quoted=!quoted;else if(char===','&&!quoted){cells.push(value.trim());value="";}else value+=char;}cells.push(value.trim());return cells;});
+const readStoredPlannerState = () => { try { const saved=localStorage.getItem("cwem-production-planner-v1"); if(saved){ const data=JSON.parse(saved); return { jobs:Array.isArray(data.jobs)?data.jobs.map(normalizeJob):initialJobs, operators:Array.isArray(data.operators)?data.operators.filter((op:Operator)=>op.id!=="op-8"):initialOperators }; } } catch {} return {jobs:initialJobs,operators:initialOperators}; };
 
 export default function ProductionPlanner(){
-  const [operators,setOperators]=useState(initialOperators);
-  const [jobs,setJobs]=useState(initialJobs);
+  const [initialPlan]=useState(readStoredPlannerState);
+  const [operators,setOperators]=useState(initialPlan.operators);
+  const [jobs,setJobs]=useState(initialPlan.jobs);
   const [weekStart,setWeekStart]=useState(()=>mondayOf(new Date()));
   // The month view is a rolling four-week planning horizon beginning with
   // the current working week, rather than a calendar-month view.
@@ -127,7 +129,6 @@ export default function ProductionPlanner(){
   const [estimatedHoursText,setEstimatedHoursText]=useState("1");
   const [showBacklog,setShowBacklog]=useState(true);
   const [notice,setNotice]=useState("");
-  const [storageLoaded,setStorageLoaded]=useState(false);
   const [copiedJob,setCopiedJob]=useState<Job|null>(null);
   const [contextMenu,setContextMenu]=useState<ContextMenu|null>(null);
   const [draggedJobId,setDraggedJobId]=useState<string|null>(null);
@@ -136,8 +137,7 @@ export default function ProductionPlanner(){
   const [sortMode,setSortMode]=useState<"manual"|"revenue"|"priority"|"machine"|"operator"|"duration"|"allocated"|"unallocated"|"unavailability"|"onhold">("unallocated");
   const boardRef=useRef<HTMLDivElement>(null),monthBoardRef=useRef<HTMLDivElement>(null),fileRef=useRef<HTMLInputElement>(null),hydrated=useRef(false),jobsRef=useRef<Job[]>(initialJobs),undoStack=useRef<Job[][]>([]);
 
-  useEffect(()=>{ try{ const saved=localStorage.getItem("cwem-production-planner-v1"); if(saved){ const data=JSON.parse(saved); if(Array.isArray(data.jobs))setJobs(data.jobs.map(normalizeJob).map((job:Job)=>job.operatorId==="op-8"?{...job,operatorId:null}:job)); if(Array.isArray(data.operators))setOperators(data.operators.filter((op:Operator)=>op.id!=="op-8").map((op:Operator)=>{const updated=initialOperators.find(item=>item.id===op.id);return updated?{...op,name:updated.name,detail:updated.detail}:op;})); } }catch{} setStorageLoaded(true); },[]);
-  useEffect(()=>{ if(storageLoaded)localStorage.setItem("cwem-production-planner-v1",JSON.stringify({jobs,operators})); },[jobs,operators,storageLoaded]);
+  useEffect(()=>{ localStorage.setItem("cwem-production-planner-v1",JSON.stringify({jobs,operators})); },[jobs,operators]);
   useEffect(()=>{jobsRef.current=jobs;},[jobs]);
   useEffect(()=>{document.querySelectorAll<HTMLSelectElement>(".sort-toolbar select").forEach(select=>{if(!select.querySelector("option[value=\"onhold\"]"))select.add(new Option("On hold","onhold"));});},[]);
   useEffect(()=>{const undo=(e:KeyboardEvent)=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();const previous=undoStack.current.pop();if(previous)setJobs(previous);else flash("Nothing to undo");}};window.addEventListener("keydown",undo);return()=>window.removeEventListener("keydown",undo);},[]);
