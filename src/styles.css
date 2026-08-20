@@ -297,3 +297,5 @@ html, body, #root { width:100%; height:100%; overflow:hidden; }
 }
 .hold-field { display:flex; flex-direction:row !important; align-items:center; gap:8px; }
 .hold-field input[type="checkbox"] { width:auto; accent-color:#b47716; }
+.on-hold-job { outline: 2px solid #d7a34a; outline-offset: -2px; }
+.on-hold-indicator { display:inline-flex; align-self:flex-start; margin-bottom:6px; padding:3px 6px; border-radius:10px; background:#fff1c9; color:#8a5a1f; font-size:9px; font-weight:800; letter-spacing:.06em; }
