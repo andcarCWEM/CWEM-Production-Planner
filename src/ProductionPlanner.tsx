@@ -126,7 +126,7 @@ export default function ProductionPlanner(){
   const [endDateText,setEndDateText]=useState(CURRENT_WEEK);
   const [estimatedHoursText,setEstimatedHoursText]=useState("1");
   const [showBacklog,setShowBacklog]=useState(true);
-+  const [notice,setNotice]=useState("");
+  const [notice,setNotice]=useState("");
   const [storageLoaded,setStorageLoaded]=useState(false);
   const [copiedJob,setCopiedJob]=useState<Job|null>(null);
   const [contextMenu,setContextMenu]=useState<ContextMenu|null>(null);
