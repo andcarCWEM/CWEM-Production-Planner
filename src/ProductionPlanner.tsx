@@ -126,7 +126,8 @@ export default function ProductionPlanner(){
   const [endDateText,setEndDateText]=useState(CURRENT_WEEK);
   const [estimatedHoursText,setEstimatedHoursText]=useState("1");
   const [showBacklog,setShowBacklog]=useState(true);
-  const [notice,setNotice]=useState("");
++  const [notice,setNotice]=useState("");
+  const [storageLoaded,setStorageLoaded]=useState(false);
   const [copiedJob,setCopiedJob]=useState<Job|null>(null);
   const [contextMenu,setContextMenu]=useState<ContextMenu|null>(null);
   const [draggedJobId,setDraggedJobId]=useState<string|null>(null);
@@ -135,8 +136,8 @@ export default function ProductionPlanner(){
   const [sortMode,setSortMode]=useState<"manual"|"revenue"|"priority"|"machine"|"operator"|"duration"|"allocated"|"unallocated"|"unavailability"|"onhold">("unallocated");
   const boardRef=useRef<HTMLDivElement>(null),monthBoardRef=useRef<HTMLDivElement>(null),fileRef=useRef<HTMLInputElement>(null),hydrated=useRef(false),jobsRef=useRef<Job[]>(initialJobs),undoStack=useRef<Job[][]>([]);
 
-  useEffect(()=>{ try{ const saved=localStorage.getItem("cwem-production-planner-v1"); if(saved){ const data=JSON.parse(saved); if(Array.isArray(data.jobs))setJobs(data.jobs.map(normalizeJob).map((job:Job)=>job.operatorId==="op-8"?{...job,operatorId:null}:job)); if(Array.isArray(data.operators))setOperators(data.operators.filter((op:Operator)=>op.id!=="op-8").map((op:Operator)=>{const updated=initialOperators.find(item=>item.id===op.id);return updated?{...op,name:updated.name,detail:updated.detail}:op;})); } }catch{} hydrated.current=true; },[]);
-  useEffect(()=>{ if(hydrated.current)localStorage.setItem("cwem-production-planner-v1",JSON.stringify({jobs,operators})); },[jobs,operators]);
+  useEffect(()=>{ try{ const saved=localStorage.getItem("cwem-production-planner-v1"); if(saved){ const data=JSON.parse(saved); if(Array.isArray(data.jobs))setJobs(data.jobs.map(normalizeJob).map((job:Job)=>job.operatorId==="op-8"?{...job,operatorId:null}:job)); if(Array.isArray(data.operators))setOperators(data.operators.filter((op:Operator)=>op.id!=="op-8").map((op:Operator)=>{const updated=initialOperators.find(item=>item.id===op.id);return updated?{...op,name:updated.name,detail:updated.detail}:op;})); } }catch{} setStorageLoaded(true); },[]);
+  useEffect(()=>{ if(storageLoaded)localStorage.setItem("cwem-production-planner-v1",JSON.stringify({jobs,operators})); },[jobs,operators,storageLoaded]);
   useEffect(()=>{jobsRef.current=jobs;},[jobs]);
   useEffect(()=>{document.querySelectorAll<HTMLSelectElement>(".sort-toolbar select").forEach(select=>{if(!select.querySelector("option[value=\"onhold\"]"))select.add(new Option("On hold","onhold"));});},[]);
   useEffect(()=>{const undo=(e:KeyboardEvent)=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();const previous=undoStack.current.pop();if(previous)setJobs(previous);else flash("Nothing to undo");}};window.addEventListener("keydown",undo);return()=>window.removeEventListener("keydown",undo);},[]);
