@@ -253,7 +253,7 @@ html, body, #root { width:100%; height:100%; overflow:hidden; }
 .job-content strong { font-size:11px; line-height:1.1; }
 .job-content span { font-size:9px; }
 .job-bar { height:26px; }
-.backlog-panel { min-width:0; height:min(100%,calc(var(--planner-display-height,100%) - 230px)); max-height:calc(var(--planner-display-height,100%) - 230px); align-self:start; overflow:hidden; }
+.backlog-panel { min-width:0; height:min(100%,calc(var(--planner-display-height,100%) - 230px),820px); max-height:min(calc(var(--planner-display-height,100%) - 230px),820px); align-self:start; overflow:hidden; }
 .backlog-head { height:58px; }
 .backlog-list { height:calc(100% - 105px); max-height:none; overflow-y:auto; }
 .backlog-job { cursor:grab; }
